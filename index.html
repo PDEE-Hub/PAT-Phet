@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PAT-Phet — Port Operations Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Anakotmai:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    /* ========== RESET ========== */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* ========== CSS VARIABLES ==========
+       Re-themed to match the real, already-live house style of
+       PAT-Phet/RDE_Financial_69.html (warm cream + navy + gold/rust/forest,
+       Anakotmai/Sarabun) instead of the generic dark "AI dashboard" look this
+       page used before. */
+    :root {
+      --bg: #f4f3f0; --bg2: #ffffff; --panel: #ffffff; --card: #f8f7f4;
+      --border: #e2dfd8; --border2: #d8d4ca;
+      --navy: #0f1e3c; --navy2: #1a3560; --teal: #0d5c56;
+      --text: #111827; --text2: #374151; --text3: #6b7280;
+
+      --amber: #b45309; --amber-l: #fffbeb; --amber-b: #fcd34d;
+      --red: #b91c1c; --red-l: #fef2f2; --red-b: #fca5a5;
+      --green: #15803d; --green-l: #f0fdf4; --green-b: #86efac;
+
+      --gold: #B8873A; --gold2: #8a6420;
+      --rust: #B8391F; --rust2: #a02f1a;
+      --forest: #367C4B; --forest2: #1f6b3a;
+
+      --r: 14px;
+      --shadow: 0 1px 3px rgba(0,0,0,.05), 0 6px 20px rgba(0,0,0,.04);
+
+      --font: 'Anakotmai', 'Sarabun', sans-serif;
+      --mono: 'Anakotmai', 'Sarabun', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      font-size: 15px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ========== LOGIN OVERLAY ========== */
+    #login-overlay {
+      position: fixed; inset: 0; z-index: 300;
+      background: var(--navy);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-box {
+      background: #fff;
+      border: none;
+      border-radius: 18px;
+      padding: 40px 36px 32px;
+      max-width: 380px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 32px 80px rgba(0,0,0,.35);
+    }
+    .login-mark {
+      width: 48px; height: 48px; margin: 0 auto 16px;
+      background: var(--navy);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .login-title { font-size: 19px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .login-sub { font-size: 11px; letter-spacing: 0.06em; color: var(--text3); margin-bottom: 22px; }
+    .login-rule { border: none; border-top: 1px solid var(--border); margin-bottom: 22px; }
+    .login-note { font-size: 12.5px; color: var(--text2); margin-bottom: 20px; line-height: 1.6; }
+    .login-note strong { color: var(--text); }
+    #g-btn-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
+    .login-error {
+      margin-top: 16px;
+      background: var(--red-l);
+      border: 1px solid var(--red-b);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 12px; color: var(--red);
+      line-height: 1.6;
+      display: none;
+    }
+    .login-footer { font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin-top: 20px; }
+
+    /* ========== MAIN CONTENT (hidden until auth) ========== */
+    #main-content { display: none; }
+
+    /* ========== NAVIGATION ========== */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: 68px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 40px;
+      background: rgba(244, 243, 240, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--text); font-weight: 700; font-size: 17px; letter-spacing: -0.01em; cursor: pointer; }
+    .logo:hover { color: var(--navy2); }
+    .logo-icon { width: 34px; height: 34px; background: var(--navy); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 17px; }
+
+    .nav-center { flex: 1; display: flex; justify-content: center; gap: 40px; }
+    .nav-center a { color: var(--text3); text-decoration: none; font-size: 13px; transition: color 0.15s ease; }
+    .nav-center a:hover { color: var(--navy2); }
+
+    .nav-right { display: flex; align-items: center; gap: 18px; }
+
+    .search-bar { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; color: var(--text); font-size: 13px; width: 200px; font-family: var(--font); transition: border-color 0.15s ease; }
+    .search-bar:focus { outline: none; border-color: var(--navy2); }
+
+    .nav-icon-btn { background: none; border: none; font-size: 19px; cursor: pointer; color: var(--text2); transition: color 0.15s ease; position: relative; }
+    .nav-icon-btn:hover { color: var(--navy2); }
+
+    .notification-dot { position: absolute; top: -3px; right: -3px; width: 9px; height: 9px; background: var(--red); border-radius: 50%; }
+
+    .nav-user { display: flex; align-items: center; gap: 10px; padding-left: 16px; border-left: 1px solid var(--border); }
+    .nav-user-email { font-size: 11px; color: var(--text3); }
+    .nav-signout { font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text3); background: none; border: 1px solid var(--border2); border-radius: 6px; padding: 5px 10px; cursor: pointer; font-family: var(--font); transition: all 0.15s ease; }
+    .nav-signout:hover { color: var(--text); border-color: var(--navy2); }
+
+    /* ========== MAIN ========== */
+    main { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 0 40px; }
+
+    /* ========== HERO ========== */
+    .hero { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 110px 40px 50px; margin-top: 68px; }
+    .hero-label { font-size: 12px; letter-spacing: 0.12em; color: var(--gold); text-transform: uppercase; margin-bottom: 18px; font-weight: 600; }
+    .hero-title { font-size: 64px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 18px; color: var(--navy); }
+    .hero-description { font-size: 17px; color: var(--text2); max-width: 680px; margin-bottom: 44px; line-height: 1.7; }
+
+    .hero-cta { display: flex; gap: 14px; justify-content: center; margin-bottom: 70px; flex-wrap: wrap; }
+    .btn { padding: 13px 30px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; border: none; font-family: var(--font); }
+    .btn-primary { background: var(--navy); color: #fff; }
+    .btn-primary:hover { background: var(--navy2); }
+    .btn-secondary { background: var(--bg2); color: var(--text); border: 1px solid var(--border2); }
+    .btn-secondary:hover { border-color: var(--navy2); color: var(--navy2); }
+
+    /* ========== STATS ========== */
+    .stats-section { margin-bottom: 90px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-top: 40px; }
+    .stat-card { background: var(--bg2); border-radius: var(--r); box-shadow: var(--shadow); border-top: 3px solid var(--border2); padding: 22px; text-align: center; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .stat-card:nth-child(1) { border-top-color: var(--gold); }
+    .stat-card:nth-child(2) { border-top-color: var(--forest); }
+    .stat-card:nth-child(3) { border-top-color: var(--navy2); }
+    .stat-card:nth-child(4) { border-top-color: var(--rust); }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0,0,0,.06), 0 14px 30px rgba(0,0,0,.07); }
+    .stat-icon { font-size: 28px; margin-bottom: 10px; }
+    .stat-value { font-size: 30px; font-weight: 700; color: var(--navy); margin-bottom: 6px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+    .stat-label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* ========== SEARCH ========== */
+    .search-section { margin-bottom: 55px; }
+    .search-container { display: flex; gap: 10px; margin-bottom: 24px; }
+    .search-container input { flex: 1; padding: 12px 16px; border: 1px solid var(--border2); border-radius: 10px; background: var(--bg2); color: var(--text); font-family: var(--font); font-size: 14px; transition: border-color 0.15s ease; }
+    .search-container input:focus { outline: none; border-color: var(--navy2); }
+    .search-container button { padding: 12px 20px; background: var(--navy); color: #fff; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; font-family: var(--font); transition: background 0.15s ease; }
+    .search-container button:hover { background: var(--navy2); }
+
+    .filter-tags { display: flex; gap: 10px; flex-wrap: wrap; }
+    .filter-tag { background: var(--bg2); border: 1px solid var(--border2); color: var(--text2); padding: 7px 14px; border-radius: 20px; font-size: 12px; cursor: pointer; transition: all 0.15s ease; }
+    .filter-tag:hover, .filter-tag.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+    /* ========== DASHBOARDS ========== */
+    .dashboards-section { margin-bottom: 90px; }
+    .section-title { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: var(--navy); }
+    .section-subtitle { font-size: 13.5px; color: var(--text3); margin-bottom: 44px; }
+
+    .dashboards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 22px; margin-bottom: 50px; }
+
+    .dashboard-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--border2);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      padding: 28px;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      display: block;
+      text-decoration: none;
+      color: inherit;
+    }
+    .dashboard-card[data-tag="financial"] { border-top-color: var(--gold); }
+    .dashboard-card[data-tag="mou"] { border-top-color: var(--forest); }
+    .dashboard-card[data-tag="cbe"] { border-top-color: var(--rust); }
+    .dashboard-card[data-tag="linkage"] { border-top-color: var(--navy2); }
+    .dashboard-card[data-tag="dwell"] { border-top-color: var(--amber); }
+
+    .dashboard-card:hover { transform: translateY(-5px); box-shadow: 0 4px 10px rgba(0,0,0,.06), 0 20px 40px rgba(0,0,0,.08); }
+
+    .dashboard-card.pending { cursor: default; opacity: 0.6; pointer-events: none; }
+    .dashboard-card.pending:hover { transform: none; box-shadow: var(--shadow); }
+
+    .dashboard-icon { font-size: 34px; margin-bottom: 14px; }
+    .dashboard-title { font-size: 17px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+    .dashboard-value { font-size: 14px; font-weight: 600; color: var(--navy2); margin-bottom: 10px; letter-spacing: 0.01em; font-variant-numeric: tabular-nums; }
+    .dashboard-description { font-size: 12.5px; color: var(--text3); line-height: 1.55; margin-bottom: 16px; }
+
+    .dashboard-badge { display: inline-block; background: var(--green-l); color: var(--green); padding: 5px 11px; border-radius: 6px; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+    .dashboard-badge.warning { background: var(--amber-l); color: var(--amber); }
+    .dashboard-badge.restricted { background: #eef1f7; color: var(--navy2); }
+    .dashboard-card.restricted-card { border-top-color: var(--navy2); }
+
+    .dashboard-open { margin-top: 14px; font-size: 12px; font-weight: 600; color: var(--navy2); display: flex; align-items: center; gap: 6px; }
+    .dashboard-card:hover .dashboard-open .arrow { transform: translateX(4px); }
+    .dashboard-open .arrow { transition: transform 0.15s ease; }
+
+    /* ========== UPDATES TICKER ========== */
+    .updates-section { margin-bottom: 90px; }
+    .updates-ticker { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); overflow: hidden; height: 56px; }
+    .ticker-content { display: flex; animation: scroll-left 35s linear infinite; gap: 40px; padding: 14px 40px; white-space: nowrap; }
+    .updates-ticker:hover .ticker-content { animation-play-state: paused; }
+    .ticker-item { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--text2); }
+    .ticker-item strong { color: var(--navy2); }
+    @keyframes scroll-left { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ticker-content { animation: none !important; }
+    }
+
+    /* ========== FEATURES ========== */
+    .features-section { margin-bottom: 90px; }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 22px; }
+    .feature-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 22px; transition: transform 0.15s ease; }
+    .feature-card:hover { transform: translateY(-3px); }
+    .feature-icon { font-size: 28px; margin-bottom: 10px; }
+    .feature-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+    .feature-description { font-size: 12px; color: var(--text3); line-height: 1.55; }
+
+    /* ========== FOOTER ========== */
+    footer { border-top: 1px solid var(--border); padding: 56px 40px 36px; margin-top: 90px; background: var(--card); }
+    .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px; margin-bottom: 36px; max-width: 1400px; margin-left: auto; margin-right: auto; }
+    .footer-section h4 { font-size: 13px; font-weight: 600; margin-bottom: 14px; color: var(--text); text-transform: uppercase; letter-spacing: 0.05em; }
+    .footer-section ul { list-style: none; }
+    .footer-section li { margin-bottom: 9px; }
+    .footer-section a { color: var(--text3); text-decoration: none; font-size: 13px; transition: color 0.15s ease; }
+    .footer-section a:hover { color: var(--navy2); }
+
+    .footer-legal { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 36px 0; font-size: 11px; color: var(--text3); line-height: 1.65; max-width: 1400px; margin-left: auto; margin-right: auto; }
+    .footer-legal strong { color: var(--navy2); }
+
+    .footer-bottom { border-top: 1px solid var(--border); padding-top: 26px; text-align: center; color: var(--text3); font-size: 12px; max-width: 1400px; margin: 0 auto; }
+    .footer-bottom p { margin-bottom: 8px; }
+
+    /* ========== MODALS ========== */
+    .modal { display: none; position: fixed; inset: 0; background: rgba(15, 30, 60, 0.45); z-index: 200; align-items: center; justify-content: center; }
+    .modal.show { display: flex; }
+    .modal-content { background: #fff; border-radius: 18px; padding: 36px; max-width: 500px; width: 90%; box-shadow: 0 32px 80px rgba(0,0,0,.3); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+    .modal-header h3 { font-size: 18px; font-weight: 700; color: var(--navy); }
+    .modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text3); transition: color 0.15s ease; }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { margin-bottom: 26px; }
+
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 768px) {
+      nav { padding: 0 20px; }
+      .nav-center { display: none; }
+      .search-bar { display: none; }
+      .nav-user-email { display: none; }
+      .hero { padding: 100px 20px 40px; margin-top: 68px; }
+      .hero-title { font-size: 38px; }
+      main { padding: 0 20px; }
+      .dashboards-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      footer { padding: 40px 20px; }
+      .footer-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 480px) {
+      .hero-title { font-size: 28px; }
+      .section-title { font-size: 22px; }
+      .hero-cta { flex-direction: column; gap: 10px; }
+      .btn { width: 100%; }
+      .stats-grid { grid-template-columns: 1fr; }
+      .modal-content { padding: 20px; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ========== LOGIN OVERLAY ========== -->
+  <div id="login-overlay">
+    <div class="login-box">
+      <div class="login-mark">🌶️</div>
+      <div class="login-title">PAT-Phet</div>
+      <div class="login-sub">กองประเมินผลองค์กร · การท่าเรือแห่งประเทศไทย · FY2569</div>
+      <hr class="login-rule">
+      <div class="login-note">
+        เข้าใช้งานด้วย Google Account<br>
+        <strong>เฉพาะอีเมล @port.co.th เท่านั้น</strong>
+      </div>
+      <div id="g-btn-wrap">
+        <div id="g_id_onload"
+          data-client_id="850818349851-ukh2ldprhknc44e2c5sij0fbnjr2c6fd.apps.googleusercontent.com"
+          data-callback="handleCredentialResponse"
+          data-auto_prompt="false">
+        </div>
+        <div class="g_id_signin"
+          data-type="standard"
+          data-size="large"
+          data-theme="outline"
+          data-text="sign_in_with"
+          data-shape="rectangular"
+          data-logo_alignment="left">
+        </div>
+      </div>
+      <div class="login-error" id="login-error">
+        ⛔ อีเมลนี้ไม่ได้รับอนุญาต<br>
+        กรุณาใช้อีเมล <strong>@port.co.th</strong> เท่านั้น
+      </div>
+      <div class="login-footer">Internal Use Only · pdee-hub.github.io</div>
+    </div>
+  </div>
+
+  <!-- ========== MAIN CONTENT (hidden until auth) ========== -->
+  <div id="main-content">
+
+  <!-- ========== NAVIGATION ========== -->
+  <nav>
+    <a href="#" class="logo">
+      <div class="logo-icon">🌶️</div>
+      <span>PAT-Phet</span>
+    </a>
+
+    <div class="nav-center">
+      <a href="#dashboards">Dashboards</a>
+      <a href="#features">Features</a>
+      <a href="#updates">Updates</a>
+    </div>
+
+    <div class="nav-right">
+      <input type="text" class="search-bar" id="navSearch" placeholder="ค้นหา dashboard...">
+
+      <button class="nav-icon-btn" id="notificationBtn">
+        🔔
+        <span class="notification-dot"></span>
+      </button>
+
+      <div class="nav-user">
+        <span class="nav-user-email" id="user-email">—</span>
+        <button class="nav-signout" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ========== MAIN ========== -->
+  <main>
+    <!-- ========== HERO ========== -->
+    <section class="hero">
+      <p class="hero-label">🎯 Welcome to Port Command Center</p>
+      <h1 class="hero-title">PAT-Phet</h1>
+      <p class="hero-description">
+        ศูนย์รวม Dashboard การวิเคราะห์ประสิทธิภาพองค์กร ครอบคลุมการเงิน, ตัวชี้วัด MOU, การประเมิน SE-AM Core Business Enablers และ Dwell Time × Revenue ทกท. สำหรับทีมงานกองประเมินผลองค์กร
+      </p>
+      <div class="hero-cta">
+        <button class="btn btn-primary" onclick="document.getElementById('dashboards').scrollIntoView({behavior: 'smooth'})">
+          📊 ดูแดชบอร์ดทั้งหมด
+        </button>
+        <button class="btn btn-secondary" onclick="openContactModal()">💬 ติดต่อ Admin</button>
+      </div>
+    </section>
+
+    <!-- ========== STATS ========== -->
+    <section class="stats-section">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">📊</div>
+          <div class="stat-value">6</div>
+          <div class="stat-label">Dashboards</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🏆</div>
+          <div class="stat-value">10</div>
+          <div class="stat-label">SE-AM Enablers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🎯</div>
+          <div class="stat-value">3.75</div>
+          <div class="stat-label">MOU Target Level</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div class="stat-value">5/6</div>
+          <div class="stat-label">Systems Live</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== SEARCH ========== -->
+    <section class="search-section">
+      <h2 class="section-title">🔍 ค้นหา Dashboard</h2>
+      <div class="search-container">
+        <input type="text" id="searchInput" placeholder="ค้นหา dashboard, สถิติ, KPI...">
+        <button onclick="performSearch()">ค้นหา</button>
+      </div>
+      <div class="filter-tags">
+        <span class="filter-tag active" onclick="filterByTag('all', this)">ทั้งหมด</span>
+        <span class="filter-tag" onclick="filterByTag('financial', this)">💰 Financial</span>
+        <span class="filter-tag" onclick="filterByTag('mou', this)">📊 MOU</span>
+        <span class="filter-tag" onclick="filterByTag('cbe', this)">🏆 CBE</span>
+        <span class="filter-tag" onclick="filterByTag('linkage', this)">🔗 Linkage</span>
+        <span class="filter-tag" onclick="filterByTag('dwell', this)">⏱️ Dwell Time</span>
+      </div>
+    </section>
+
+    <!-- ========== DASHBOARDS ========== -->
+    <section class="dashboards-section" id="dashboards">
+      <h2 class="section-title">📈 Interactive Dashboards</h2>
+      <p class="section-subtitle">เข้าถึงแดชบอร์ดวิเคราะห์ประสิทธิภาพการดำเนินงาน ปีงบประมาณ 2569</p>
+
+      <div class="dashboards-grid">
+        <!-- MOU Dashboard -->
+        <a class="dashboard-card" data-tag="mou" href="https://pdee-hub.github.io/MOU69/" target="_blank" onclick="logAccess('view_dashboard','mou')">
+          <div class="dashboard-icon">📊</div>
+          <h3 class="dashboard-title">MOU Performance 2569</h3>
+          <div class="dashboard-value">3.5673 / 5.00</div>
+          <p class="dashboard-description">
+            ติดตามผลการดำเนินงานตาม MOU ปีงบประมาณ 2569 รวม 60 ตัวชี้วัด ณ สิ้นไตรมาส 2 คะแนนมาตรฐาน (ปรับน้ำหนัก) 3.5673 คะแนน คาดการณ์สิ้นปี 3.8321 คะแนน ใกล้เคียงเป้าหมาย 3.75
+          </p>
+          <span class="dashboard-badge">Live ✓</span>
+          <div class="dashboard-open">เปิดแดชบอร์ด <span class="arrow">→</span></div>
+        </a>
+
+        <!-- SE-AM Enablers Dashboard -->
+        <a class="dashboard-card" data-tag="cbe" href="https://pdee-hub.github.io/Enablers-Forecast-Score-69/" target="_blank" onclick="logAccess('view_dashboard','enablers')">
+          <div class="dashboard-icon">🏆</div>
+          <h3 class="dashboard-title">SE-AM CBE Enablers 69</h3>
+          <div class="dashboard-value">10 ด้าน</div>
+          <p class="dashboard-description">
+            ผลคะแนนและเทียบ YoY ของ SE-AM Core Business Enablers ทั้ง 10 ด้าน (CG, SP, RM&IC, SM, CM, DT, HCM, KM, IM, IA) ปีงบประมาณ 2569 พร้อมลิงก์ไปยังระบบแลกเปลี่ยนเอกสารระหว่างด้าน
+          </p>
+          <span class="dashboard-badge">Live ✓</span>
+          <div class="dashboard-open">เปิดแดชบอร์ด <span class="arrow">→</span></div>
+        </a>
+
+        <!-- Linkage Map Dashboard -->
+        <a class="dashboard-card" data-tag="linkage" href="https://pdee-hub.github.io/Enablers-Link-Document-69/" target="_blank" onclick="logAccess('view_dashboard','linkage')">
+          <div class="dashboard-icon">🔗</div>
+          <h3 class="dashboard-title">CBE Enabler Linkage<br>(Handshake)</h3>
+          <div class="dashboard-value">10 ด้าน</div>
+          <p class="dashboard-description">
+            ระบบส่ง-รับเอกสารระหว่าง 10 ด้าน Core Business Enablers ผ่าน Handshake เพื่อแก้ปัญหา Silo ระหว่างหน่วยงาน มุ่งยกระดับคะแนน SE-AM
+          </p>
+          <span class="dashboard-badge">Live ✓</span>
+          <div class="dashboard-open">เปิดแดชบอร์ด <span class="arrow">→</span></div>
+        </a>
+
+        <!-- Dwell Time x Revenue Infographic -->
+        <a class="dashboard-card" data-tag="dwell" href="https://pdee-hub.github.io/DwellTime-TKK/infographic_dwell_revenue.html" target="_blank" onclick="logAccess('view_dashboard','dwelltime')">
+          <div class="dashboard-icon">⏱️</div>
+          <h3 class="dashboard-title">Dwell Time × Revenue<br>Infographic</h3>
+          <div class="dashboard-value">~115 ล้านบาท</div>
+          <p class="dashboard-description">
+            ทำไมรายได้ ทกท. เพิ่มขึ้น — วิเคราะห์ความเชื่อมโยงระหว่างตู้สินค้า (ขาเข้า) ค้างลานนานขึ้นกับรายได้ค่าภาระฝากตู้ที่เพิ่มขึ้นจริง ~115 ล้านบาทใน 7 เดือนแรกของ FY2569
+          </p>
+          <span class="dashboard-badge warning">🚧 อยู่ระหว่างดำเนินการ — 60%</span>
+          <div class="dashboard-open">เปิด Infographic <span class="arrow">→</span></div>
+        </a>
+      </div>
+    </section>
+
+    <!-- ========== INTERNAL USE ========== -->
+    <section class="dashboards-section" id="internal">
+      <h2 class="section-title">🔒 Internal Use Only</h2>
+      <p class="section-subtitle">แดชบอร์ดข้อมูลภายใน ใช้งานเฉพาะทีมที่ได้รับสิทธิ์เท่านั้น — ไม่เผยแพร่บน GitHub Pages</p>
+
+      <div class="dashboards-grid">
+        <!-- Financial Analytics (request access — local-only, not hosted on GitHub) -->
+        <a class="dashboard-card restricted-card" data-tag="financial" href="mailto:pdee@port.co.th?subject=%E0%B8%82%E0%B8%AD%E0%B8%AA%E0%B8%B4%E0%B8%97%E0%B8%98%E0%B8%B4%E0%B9%8C%E0%B9%80%E0%B8%82%E0%B9%89%E0%B8%B2%E0%B8%96%E0%B8%B6%E0%B8%87%20Financial%20Analytics%20%26%20Explorer%20Dashboard" onclick="logAccess('request_access','financial')">
+          <div class="dashboard-icon">💰</div>
+          <h3 class="dashboard-title">Financial Analytics & Explorer</h3>
+          <div class="dashboard-value">FY2569</div>
+          <p class="dashboard-description">
+            วิเคราะห์ผลประกอบการของท่าเรือภายใต้การดูแลของ กทท. ได้แก่ ทกท., ทลฉ., ทรน., ทชส. และ HQ ครอบคลุมรายได้-ค่าใช้จ่าย, YoY, treemap เจาะลึกรายหมวด และตารางค้นหา/กรอง — ข้อมูลเป็นความลับ เข้าถึงได้เฉพาะผู้ที่ได้รับสิทธิ์
+          </p>
+          <span class="dashboard-badge restricted">🔒 ขอสิทธิ์เข้าถึง</span>
+          <div class="dashboard-open">ส่งคำขอทางอีเมล <span class="arrow">→</span></div>
+        </a>
+
+        <!-- HR Workforce Intelligence (request access — local-only, not hosted on GitHub) -->
+        <a class="dashboard-card restricted-card" data-tag="hr" href="mailto:pdee@port.co.th?subject=%E0%B8%82%E0%B8%AD%E0%B8%AA%E0%B8%B4%E0%B8%97%E0%B8%98%E0%B8%B4%E0%B9%8C%E0%B9%80%E0%B8%82%E0%B9%89%E0%B8%B2%E0%B8%96%E0%B8%B6%E0%B8%87%20HR%20Workforce%20Intelligence%20Dashboard" onclick="logAccess('request_access','hr')">
+          <div class="dashboard-icon">👥</div>
+          <h3 class="dashboard-title">HR Workforce Intelligence</h3>
+          <div class="dashboard-value">n = 3,248</div>
+          <p class="dashboard-description">
+            วิเคราะห์กำลังคน สัดส่วนเพศ/Generation/การศึกษา ความเสี่ยงการเกษียณ และแผนสืบทอดตำแหน่งผู้บริหาร พร้อมค้นหาพนักงานรายบุคคล — ข้อมูลส่วนบุคคล เข้าถึงได้เฉพาะผู้ที่ได้รับสิทธิ์
+          </p>
+          <span class="dashboard-badge restricted">🔒 ขอสิทธิ์เข้าถึง</span>
+          <div class="dashboard-open">ส่งคำขอทางอีเมล <span class="arrow">→</span></div>
+        </a>
+      </div>
+    </section>
+
+    <!-- ========== UPDATES TICKER ========== -->
+    <section class="updates-section" id="updates">
+      <h2 class="section-title">🔔 Latest Updates</h2>
+      <div class="updates-ticker">
+        <div class="ticker-content">
+          <div class="ticker-item"><strong>🔒 ขอสิทธิ์เข้าถึง:</strong> Financial Analytics — ครอบคลุมข้อมูล FY2569 รายเดือน/สะสม</div>
+          <div class="ticker-item"><strong>🔒 ขอสิทธิ์เข้าถึง:</strong> PAT Financial Explorer — treemap/Sankey/เทียบ YoY แบบ interactive ครอบคลุม กทท. + 4 ท่าเรือ</div>
+          <div class="ticker-item"><strong>Live:</strong> SE-AM Enablers — ผลคะแนนและเทียบ YoY ครบ 10 ด้าน</div>
+          <div class="ticker-item"><strong>Live:</strong> CBE Enabler Linkage (Handshake) — ระบบแลกเปลี่ยนเอกสารระหว่าง 10 ด้าน</div>
+          <div class="ticker-item"><strong>Live:</strong> MOU Performance 2569 — Q2 คะแนนมาตรฐาน 3.5673 คาดการณ์สิ้นปี 3.8321</div>
+          <div class="ticker-item"><strong>อยู่ระหว่างดำเนินการ (60%):</strong> Dwell Time × Revenue Infographic — รายได้ค่าภาระฝากตู้เพิ่ม ~115 ล้านบาท (7 เดือน FY2569)</div>
+          <!-- Duplicate for seamless loop -->
+          <div class="ticker-item"><strong>🔒 ขอสิทธิ์เข้าถึง:</strong> Financial Analytics — ครอบคลุมข้อมูล FY2569 รายเดือน/สะสม</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== FEATURES ========== -->
+    <section class="features-section" id="features">
+      <h2 class="section-title">✨ อะไรที่ทำให้ PAT Hub มีประโยชน์</h2>
+      <p class="section-subtitle">ฟีเจอร์หลักที่ช่วยให้ทีมงานเข้าถึงข้อมูลได้อย่างมีประสิทธิภาพ</p>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3 class="feature-title">Interactive Charts & KPI Tracking</h3>
+          <p class="feature-description">ติดตาม progress หลาย KPI พร้อมแสดง trend, target vs actual ในลักษณะ interactive</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📱</div>
+          <h3 class="feature-title">Mobile Responsive Design</h3>
+          <p class="feature-description">ดูได้ทุกอุปกรณ์ (mobile, tablet, desktop) ด้วย responsive design</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🔐</div>
+          <h3 class="feature-title">Secure Access</h3>
+          <p class="feature-description">Google Sign-In จำกัดเฉพาะอีเมล @port.co.th เท่านั้น</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🔍</div>
+          <h3 class="feature-title">Search & Filter</h3>
+          <p class="feature-description">ค้นหา dashboard ตามชื่อหรือหมวดหมู่ได้อย่างรวดเร็ว</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ========== FOOTER ========== -->
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-section">
+        <h4>📊 Dashboards</h4>
+        <ul>
+          <li><a href="#dashboards">Financial Analytics</a></li>
+          <li><a href="#dashboards">PAT Financial Explorer</a></li>
+          <li><a href="#dashboards">MOU Performance</a></li>
+          <li><a href="#dashboards">SE-AM Enablers</a></li>
+          <li><a href="#dashboards">Linkage Map</a></li>
+          <li><a href="#dashboards">Dwell Time × Revenue</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-section">
+        <h4>📞 Support</h4>
+        <ul>
+          <li><a href="#" onclick="openContactModal(); return false;">Contact Admin</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-section">
+        <h4>⚖️ Legal</h4>
+        <ul>
+          <li>Internal Use Only</li>
+          <li>การท่าเรือแห่งประเทศไทย</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ========== LEGAL NOTICE ========== -->
+    <div class="footer-legal">
+      <strong>📌 ที่มาของข้อมูล (Data Attribution):</strong><br>
+      ข้อมูลทั้งหมดในระบบ PAT-Phet เป็นข้อมูลรวมจากระบบบัญชีข้อมูลการท่าเรือแห่งประเทศไทย <strong>(PAT Data Catalog)</strong>
+      ซึ่งเป็นระบบการเก็บข้อมูลอย่างเป็นระบบและผ่านการตรวจสอบมาตรฐาน
+      <br><br>
+      <strong>⚠️ ข้อจำกัดการใช้ข้อมูล (Usage Restrictions):</strong><br>
+      ห้ามนำข้อมูลจากระบบ PAT-Phet ไปใช้โดยมิได้รับอนุญาตจากการท่าเรือแห่งประเทศไทย
+      ข้อมูลในระบบนี้จัดทำขึ้นเพื่อใช้งานภายในองค์กร (Internal Use Only)
+      <br><br>
+      <strong>✓ Data Quality:</strong> ผู้ใช้ควรยืนยันข้อมูลสำคัญกับระบบต้นฉบับเสมอ ในบางกรณีอาจมีความล่าช้าในการอัปเดต
+    </div>
+
+    <div class="footer-bottom">
+      <p>© การท่าเรือแห่งประเทศไทย (Port Authority of Thailand) — กองประเมินผลองค์กร · PAT-Phet</p>
+      <p>อัปเดตล่าสุด: มิ.ย. 2569 · FY2569 · pdee-hub.github.io</p>
+    </div>
+  </footer>
+
+  <!-- ========== NOTIFICATION MODAL ========== -->
+  <div class="modal" id="notificationModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>🔔 Notifications</h3>
+        <button class="modal-close" onclick="closeModal('notificationModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="padding: 15px; background: var(--green-l); border-radius: 8px; border-left: 4px solid var(--green); margin-bottom: 10px;">
+          <strong style="color: var(--green);">✓ Financial Analytics</strong><br>
+          <small>Live — ครอบคลุมข้อมูล FY2569</small>
+        </div>
+        <div style="padding: 15px; background: var(--green-l); border-radius: 8px; border-left: 4px solid var(--green); margin-bottom: 10px;">
+          <strong style="color: var(--green);">✓ PAT Financial Explorer</strong><br>
+          <small>Live — treemap/Sankey/เทียบ YoY interactive ครอบคลุม กทท. + 4 ท่าเรือ</small>
+        </div>
+        <div style="padding: 15px; background: var(--green-l); border-radius: 8px; border-left: 4px solid var(--green); margin-bottom: 10px;">
+          <strong style="color: var(--green);">✓ SE-AM Enablers</strong><br>
+          <small>Live — ผลคะแนนและเทียบ YoY ครบ 10 ด้าน</small>
+        </div>
+        <div style="padding: 15px; background: var(--green-l); border-radius: 8px; border-left: 4px solid var(--green); margin-bottom: 10px;">
+          <strong style="color: var(--green);">✓ CBE Enabler Linkage (Handshake)</strong><br>
+          <small>Live — ระบบแลกเปลี่ยนเอกสารระหว่าง 10 ด้าน</small>
+        </div>
+        <div style="padding: 15px; background: var(--green-l); border-radius: 8px; border-left: 4px solid var(--green); margin-bottom: 10px;">
+          <strong style="color: var(--green);">✓ MOU Performance 2569</strong><br>
+          <small>Live — Q2 คะแนนมาตรฐาน 3.5673 คาดการณ์สิ้นปี 3.8321 ใกล้เคียงเป้าหมาย 3.75</small>
+        </div>
+        <div style="padding: 15px; background: var(--amber-l); border-radius: 8px; border-left: 4px solid var(--amber);">
+          <strong style="color: var(--amber);">⚠️ Dwell Time × Revenue Infographic</strong><br>
+          <small>อยู่ระหว่างดำเนินการ — เนื้อหาเพียง 60%</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== CONTACT ADMIN MODAL ========== -->
+  <div class="modal" id="contactModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>💬 ติดต่อ Admin</h3>
+        <button class="modal-close" onclick="closeModal('contactModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 13px; color: var(--text3); line-height: 1.6;">
+          สำหรับการแจ้งปัญหาหรือข้อเสนอแนะเกี่ยวกับ PAT-Phet กรุณาติดต่อกองประเมินผลองค์กรผ่านอีเมลภายในองค์กร
+        </p>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <a class="btn btn-primary" style="flex:1; text-align:center; text-decoration:none; display:block;" href="mailto:pdee@port.co.th?subject=PAT%20Intelligence%20Hub%20Feedback">📧 ส่งอีเมล</a>
+        <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('contactModal')">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /main-content -->
+
+  <!-- ========== JAVASCRIPT ========== -->
+  <script>
+    const ALLOWED_DOMAIN = 'port.co.th';
+
+    // ========== ACCESS LOG — Google Apps Script webhook (ดู PAT-Phet — Access Log Sheet) ==========
+    const LOG_URL = "https://script.google.com/macros/s/AKfycbyiOmQXNYo31FvJ7g33Jmevmj3MhiKq7CAxob_MRtQIh9UGVENBubzQmTgpjuYa5IHhXg/exec";
+    function currentEmail() {
+      return sessionStorage.getItem('pat_auth') || '';
+    }
+    function logAccess(action, page, extra) {
+      try {
+        const payload = JSON.stringify(Object.assign({ email: currentEmail(), action, page }, extra || {}));
+        navigator.sendBeacon(LOG_URL, new Blob([payload], { type: 'text/plain;charset=utf-8' }));
+      } catch (e) {}
+    }
+    // ── Duration: ยิงครั้งเดียวตอนสลับแท็บ/ปิดหน้าเป็นครั้งแรก ──
+    const PAGE_LOAD_TS = Date.now();
+    let _durationSent = false;
+    function logDuration() {
+      if (_durationSent) return;
+      _durationSent = true;
+      const sec = Math.round((Date.now() - PAGE_LOAD_TS) / 1000);
+      logAccess('duration', 'hub', { duration: sec });
+    }
+    document.addEventListener('visibilitychange', () => { if (document.hidden) logDuration(); });
+    window.addEventListener('pagehide', logDuration);
+
+    // ========== AUTH ==========
+    function handleCredentialResponse(response) {
+      const payload = parseJwt(response.credential);
+      const email = payload.email || '';
+      if (email.endsWith('@' + ALLOWED_DOMAIN)) {
+        document.getElementById('login-overlay').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+        document.getElementById('user-email').textContent = email;
+        sessionStorage.setItem('pat_auth', email);
+        logAccess('login', 'hub');
+      } else {
+        document.getElementById('login-error').style.display = 'block';
+      }
+    }
+
+    function parseJwt(token) {
+      const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      return JSON.parse(decodeURIComponent(atob(base64).split('').map(c =>
+        '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+    }
+
+    function signOut() {
+      sessionStorage.removeItem('pat_auth');
+      location.reload();
+    }
+
+    window.addEventListener('load', () => {
+      const saved = sessionStorage.getItem('pat_auth');
+      if (saved && saved.endsWith('@' + ALLOWED_DOMAIN)) {
+        document.getElementById('login-overlay').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+        document.getElementById('user-email').textContent = saved;
+      }
+    });
+
+    // ========== MODALS ==========
+    function openContactModal() { document.getElementById('contactModal').classList.add('show'); }
+    function closeModal(modalId) { document.getElementById(modalId).classList.remove('show'); }
+
+    window.addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal')) e.target.classList.remove('show');
+    });
+
+    document.getElementById('notificationBtn').addEventListener('click', () => {
+      document.getElementById('notificationModal').classList.add('show');
+    });
+
+    // ========== SEARCH & FILTER ==========
+    function performSearch() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      document.querySelectorAll('.dashboard-card').forEach(card => {
+        card.style.display = card.textContent.toLowerCase().includes(query) ? '' : 'none';
+      });
+    }
+
+    function filterByTag(tag, el) {
+      document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+
+      document.querySelectorAll('.dashboard-card').forEach(card => {
+        card.style.display = (tag === 'all' || card.getAttribute('data-tag') === tag) ? '' : 'none';
+      });
+    }
+
+    document.getElementById('searchInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') performSearch();
+    });
+  </script>
+</body>
+</html>
